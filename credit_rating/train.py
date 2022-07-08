@@ -3,10 +3,9 @@ import pandas as pd
 import os
 
 from code.utills import preprocessing
-# from sklearn.model_selection import train_test_split
-import xgboost as xgb
-from xgboost.sklearn import XGBClassifier
+from sklearn.model_selection import train_test_split
 
+from code.model import Rating_model
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -25,25 +24,36 @@ x = df_clean.drop(columns = ['Risk']).to_numpy()
 y = df_clean['Risk']
 y = y.to_numpy().ravel() # 1 차원 벡터 형태로 출력하기 위해 ravel 사용
 
-print(df_clean.info())
+# 홀드아웃 검증 0.8 : 0.2 비율
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2, random_state = 0, stratify=y)
 
-# # # 홀드아웃 검증 0.8 : 0.2 비율
-# # x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2, random_state = 0, stratify=y)
+xgb_config = {
+     'height':1, 
+     'grid' :True, 
+     'importance_type':'gain', 
+     'show_values':False, 
+     'max_num_features':20
+}
 
-# # # 모델 하이퍼 파리미터
+rfc_config = {
+        'n_estimators':100, 
+        'max_depth':12,
+        'min_samples_leaf':8,
+        'min_samples_split':8,
+        'random_state':0,
+}
 
-# config = {
-#      'height':1, 
-#      'grid' :True, 
-#      'importance_type':'gain', 
-#      'show_values':False, 
-#      'max_num_features':20
-# }
-# # 모델 정의
-# model = XGBClassifier(**config)
-# # 모델 학습
-# model.fit(x_train, y_train)
+knn_conig = {
+    'n_neighbors' : 5,
+}
 
-# print("%s - train_score : %f, test score : %f" % (model.__class__.__name__
-#                                             , model.score(x_train, y_train), 
-#                                             model.score(x_test, y_test)))
+gb_conig = {
+
+}
+
+model_list = ["xgb", "rfc", "gb", "knn"]
+model_config = [xgb_config, rfc_config, knn_conig, gb_conig]
+model = Rating_model()
+
+for model_name, model_cfg in zip(model_list, model_config):
+    model.model_append(model_name, model_cfg)
