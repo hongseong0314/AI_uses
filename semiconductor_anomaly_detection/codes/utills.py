@@ -15,25 +15,32 @@ def preprocess(mode='train'):
     """
     데이터 전처리 함수
     """
-    if mode == 'train':
-        data = pd.read_csv('./data/uci-secom.csv')
-        # 쓸모없는 데이터 지우기
-        data = data.drop(columns = ['Time'], axis = 1)
-    else:
-        data = pd.read_csv('./data/uci-secom-test.csv')
+
+    train = pd.read_csv('./data/uci-secom.csv')
+    train = train.drop(columns = ['Time'], axis = 1)
+    train_size = len(train)
+    test = pd.read_csv('./data/uci-secom-test.csv')
+    big_df = pd.concat([train, test], axis=0)
+
+
     # 데이터 결측값 처리
-    data = data.replace(np.NaN, 0)
+    big_df = big_df.replace(np.NaN, 0)
     #print(data.isnull().sum())
     
     # 데이터 타입별 나눠주기
-    numerical_feature = seperate_type(data)[0]
-    category_feature = seperate_type(data)[1]
+    numerical_feature = seperate_type(big_df)[0]
+    category_feature = seperate_type(big_df)[1]
     
     # 0만 있는 분포 제거
-    corr_data = data[numerical_feature].corrwith(data['Pass/Fail']).sort_values(ascending=False)
+    corr_data = big_df[numerical_feature].corrwith(big_df['Pass/Fail']).sort_values(ascending=False)
     corr_df = pd.DataFrame(corr_data, columns=['Correlation'])
     NaN_col = corr_df.loc[corr_df['Correlation'].isnull()].index.tolist()
-    data.drop(NaN_col, axis=1, inplace=True)
+    big_df.drop(NaN_col, axis=1, inplace=True)
+    if mode == 'train':
+        data = big_df[:train_size]
+
+    else:
+        data = big_df[train_size:]
 
     # 타겟 데이터 분리
     x = data.iloc[:, :-1]
@@ -43,7 +50,7 @@ def preprocess(mode='train'):
     print("x data shape : {}".format(x.shape))
     print("y data shape : {}".format(y.shape))
     
-    del corr_data, corr_df
+    del corr_data, corr_df, big_df, train, test
     return x, y
 
 def downsampling(x, y, seed=42):

@@ -14,4 +14,9 @@ if __name__ == '__main__':
         'max_num_features':20
     }
 
+    lda_config = {
+        'solver':'svd'
+    }
+    
     ad_model.fit("xgb", x, y, 3, xgb_config)
+    ad_model.fit("lda", x, y, 3, xgb_config)

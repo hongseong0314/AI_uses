@@ -24,7 +24,7 @@ from sklearn.metrics import roc_curve
 from codes.utills import downsampling
 
 class Anomaly_Detection_model():
-    MODEL_NAME = {"xgb":XGBClassifier, "rfc":RandomForestClassifier, "svc":SVC, "knn":KNeighborsClassifier} 
+    MODEL_NAME = {"xgb":XGBClassifier, "lda":LinearDiscriminantAnalysis, "svc":SVC, "knn":KNeighborsClassifier} 
     def __init__(self):
 
         self.model_list = {}
@@ -41,7 +41,15 @@ class Anomaly_Detection_model():
 
         self.x_s = x_scaler
         self.y_s = y_scaler
+
+        create_directory("scale")
+        joblib.dump(x_scaler, "scale/x.save")
+        joblib.dump(y_scaler, "scale/y.save")
         pass
+    
+    def load_scale(self):
+        self.x_s = joblib.load("scale/x.save")
+        self.y_s = joblib.load("scale/y.save")
 
     def model_append(self, model_name, model_clf=None):
         model = self.MODEL_NAME[model_name]
@@ -85,6 +93,9 @@ class Anomaly_Detection_model():
         model_list = self.model_list[model_name]
         alpha = 1/len(model_list)
 
+        if self.x_s == None:
+            self.load_scale()
+
         x_test = self.x_s.transform(x_test)
         for i, model in enumerate(model_list):
             if i == 0:
@@ -100,10 +111,11 @@ class Anomaly_Detection_model():
     def evals(self, model_name ,x_test, y_test, thresholds=[0.5]):
         if y_test.ndim == 1:
             y_test = y_test.reshape(-1, 1)
-        x_test = self.x_s.transform(x_test)
-        y_test = self.y_s.transform(y_test)
+        
+        y_test = np.clip(y_test, 0, 1)
         pred = self.predict(model_name, x_test, 'prob')
-        self.get_eval_by_threshold(y_test, pred[:,1].reshape(-1,1), thresholds)
+        pred_1 = pred[:,1].reshape(-1,1)
+        self.get_eval_by_threshold(y_test, pred_1, thresholds)
 
     
     def get_clf_eval(self, y_test , pred):
@@ -129,15 +141,14 @@ class Anomaly_Detection_model():
     def roc_curve_plot(self, model_list, x_test, y_test):
         if y_test.ndim == 1:
             y_test = y_test.reshape(-1, 1)
-        x_test = self.x_s.transform(x_test)
-        y_test = self.y_s.transform(y_test)
+        y_test = np.clip(y_test, 0, 1)
         
         # 모델별 임계값에 따른 FPR, TPR 값을 변환
         with plt.style.context('ggplot'):
             plt.figure(figsize=(8,6))
             for model_name in model_list:
-                model = self.model_list[model_name]
-                pred_proba_c1 = model.predict_proba(x_test)[:, 1]
+                pred_proba_c1 = self.predict(model_name, x_test.copy(), 'prob')
+                pred_proba_c1 = pred_proba_c1[:,1].reshape(-1,1)
                 fprs, tprs, threshodls = roc_curve(y_test, pred_proba_c1)
 
                 # ROC Curve를 plot 곡선으로 시각화
