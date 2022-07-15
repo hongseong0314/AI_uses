@@ -11,18 +11,19 @@ def seperate_type(df):
     
     return numerical, category
 
-def preprocess():
+def preprocess(mode='train'):
     """
     데이터 전처리 함수
     """
-    data = pd.read_csv('./data/uci-secom.csv')
-    
+    if mode == 'train':
+        data = pd.read_csv('./data/uci-secom.csv')
+        # 쓸모없는 데이터 지우기
+        data = data.drop(columns = ['Time'], axis = 1)
+    else:
+        data = pd.read_csv('./data/uci-secom-test.csv')
     # 데이터 결측값 처리
     data = data.replace(np.NaN, 0)
     #print(data.isnull().sum())
-    
-    # 쓸모없는 데이터 지우기
-    data = data.drop(columns = ['Time'], axis = 1)
     
     # 데이터 타입별 나눠주기
     numerical_feature = seperate_type(data)[0]
@@ -49,7 +50,7 @@ def downsampling(x, y, seed=42):
     """
     데이터 다운 샘플링
     """
-    fulls = np.hstack([xx,yy])
+    fulls = np.hstack([x,y])
     data = pd.DataFrame(fulls)
     # Under sampling 수행(-1 label이 많기 때문에 클래스 균형을 맞춰준다)
     failed_tests = np.array(data[data.iloc[:, -1] == 1].index)

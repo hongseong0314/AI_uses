@@ -21,7 +21,7 @@ from sklearn.preprocessing import Binarizer
 from sklearn.metrics import accuracy_score, precision_score , recall_score , confusion_matrix, f1_score
 from sklearn.metrics import roc_curve
 
-from utills import downsampling
+from codes.utills import downsampling
 
 class Anomaly_Detection_model():
     MODEL_NAME = {"xgb":XGBClassifier, "rfc":RandomForestClassifier, "svc":SVC, "knn":KNeighborsClassifier} 
@@ -81,24 +81,28 @@ class Anomaly_Detection_model():
 
         self.model_list[model_name] = model_list
     
-    def predict(self, x_test):
-        alpha = 1/len(self.model_list)
+    def predict(self, model_name, x_test, mode='prob'):
+        model_list = self.model_list[model_name]
+        alpha = 1/len(model_list)
 
-        for i, model in enumerate(self.model_list):
+        x_test = self.x_s.transform(x_test)
+        for i, model in enumerate(model_list):
             if i == 0:
                 pred = alpha * model.predict_proba(x_test)
             else:
                 pred += alpha * model.predict_proba(x_test)
 
-        return np.argmax(pred, axis=1)
+        if mode=='prob':
+            return pred
+        else:
+            return np.argmax(pred, axis=1)
     
     def evals(self, model_name ,x_test, y_test, thresholds=[0.5]):
         if y_test.ndim == 1:
             y_test = y_test.reshape(-1, 1)
         x_test = self.x_s.transform(x_test)
         y_test = self.y_s.transform(y_test)
-        model = self.model_list[model_name]
-        pred = model.predict_proba(x_test)
+        pred = self.predict(model_name, x_test, 'prob')
         self.get_eval_by_threshold(y_test, pred[:,1].reshape(-1,1), thresholds)
 
     
@@ -148,8 +152,8 @@ class Anomaly_Detection_model():
             plt.legend()
             plt.show()
     
-    def load_modal(self, model_name):
-        path = glob('weight/' + model_name + '*.pth')
+    def load_model(self, model_name):
+        path = glob('weight/' + model_name + '/*')
         model_list = [joblib.load(p) for p in path]
         self.model_list[model_name] = model_list
 
