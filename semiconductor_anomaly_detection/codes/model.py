@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd 
 import os
 import matplotlib.pyplot as plt
-
+from glob import glob
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
@@ -21,13 +21,13 @@ from sklearn.preprocessing import Binarizer
 from sklearn.metrics import accuracy_score, precision_score , recall_score , confusion_matrix, f1_score
 from sklearn.metrics import roc_curve
 
-from utils import preprocess, downsampling
+from utills import downsampling
 
 class Anomaly_Detection_model():
     MODEL_NAME = {"xgb":XGBClassifier, "rfc":RandomForestClassifier, "svc":SVC, "knn":KNeighborsClassifier} 
     def __init__(self):
 
-        self.model_list = []
+        self.model_list = {}
         self.results = {}
         self.x_s = None
         self.y_s = None
@@ -60,24 +60,26 @@ class Anomaly_Detection_model():
         # random seed
         random_seed = np.random.randint(0, 100, bagging_num)
         
+        # model save path
+        create_directory("weight")
+        create_directory("weight/"+model_name)
+
+        model_list = []
         for b, seed in enumerate(random_seed):
             x, y = downsampling(x_train, y_train, seed)
             model = self.MODEL_NAME[model_name]
             clf = model(**model_clf)
             clf.fit(x,y)
-            self.model_list.append(clf)
+            model_list.append(clf)
         
             print("-"*50)
             print("model name : {} bagging num : {} acc : {}".format(model_name, b, 100))
-        
-#         self.model_list[model_name] = random_clf.best_estimator_
-#         self.results[model_name] = random_clf.best_score_
 
-#         #save  
-#         create_directory("weight")
-#         create_directory("weight/"+model_name)
-#         save_path = 'weight/' + model_name + '/model.pkl'
-#         joblib.dump(random_clf.best_estimator_, save_path) 
+            #save  
+            save_path = 'weight/' + model_name + '/model_{}.pkl'.format(b)
+            joblib.dump(clf, save_path) 
+
+        self.model_list[model_name] = model_list
     
     def predict(self, x_test):
         alpha = 1/len(self.model_list)
@@ -147,9 +149,9 @@ class Anomaly_Detection_model():
             plt.show()
     
     def load_modal(self, model_name):
-        path = 'weight/' + model_name + '/model.pkl'
-        clf = joblib.load(path) 
-        self.model_list[model_name] = clf
+        path = glob('weight/' + model_name + '*.pth')
+        model_list = [joblib.load(p) for p in path]
+        self.model_list[model_name] = model_list
 
 def create_directory(dir):
     if not os.path.exists(dir):

@@ -1,5 +1,5 @@
 from codes.model import Anomaly_Detection_model
-from codes.utils import preprocess
+from codes.utills import preprocess
 
 if __name__ == '__main__':
     x, y = preprocess()
