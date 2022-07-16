@@ -79,9 +79,9 @@ class Anomaly_Detection_model():
             clf = model(**model_clf)
             clf.fit(x,y)
             model_list.append(clf)
-        
+            score = clf.score(x_train, y_train)
             print("-"*50)
-            print("model name : {} bagging num : {} acc : {}".format(model_name, b, 100))
+            print("model name : {} bagging num : {} acc : {}".format(model_name, b, score))
 
             #save  
             save_path = 'weight/' + model_name + '/model_{}.pkl'.format(b)
