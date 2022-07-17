@@ -24,6 +24,9 @@ from sklearn.metrics import roc_curve
 from codes.utills import downsampling
 
 class Anomaly_Detection_model():
+    """
+    반도체 이상치 탐지 모델 
+    """
     MODEL_NAME = {"xgb":XGBClassifier, "lda":LinearDiscriminantAnalysis, "svc":SVC, "knn":KNeighborsClassifier} 
     def __init__(self):
 
@@ -33,6 +36,9 @@ class Anomaly_Detection_model():
         self.y_s = None
 
     def normalize(self, x_train, y_train):
+        """
+        모델 정규화
+        """
         x_scaler = MinMaxScaler()
         x_scaler.fit(x_train)
 
@@ -56,6 +62,10 @@ class Anomaly_Detection_model():
         self.model_list[model_name] = model(**model_clf)
 
     def fit(self, model_name, x_train, y_train, bagging_num, model_clf):
+        """
+        모델 학습
+        bagging_num : 배깅 앙상블 수
+        """
         if y_train.ndim == 1:
             y_train = y_train.values.reshape(-1,1)
             
@@ -90,6 +100,10 @@ class Anomaly_Detection_model():
         self.model_list[model_name] = model_list
     
     def predict(self, model_name, x_test, mode='prob'):
+        """
+        모델 예측 값 출력
+        mode= prob : 확률값으로 반환, deter : 0 or 1로 반환
+        """
         model_list = self.model_list[model_name]
         alpha = 1/len(model_list)
 
@@ -109,6 +123,9 @@ class Anomaly_Detection_model():
             return np.argmax(pred, axis=1)
     
     def evals(self, model_name ,x_test, y_test, thresholds=[0.5]):
+        """
+        모델 평가
+        """
         if y_test.ndim == 1:
             y_test = y_test.reshape(-1, 1)
         
@@ -119,6 +136,9 @@ class Anomaly_Detection_model():
 
     
     def get_clf_eval(self, y_test , pred):
+        """
+        혼동행렬, 정확도, 정밀도, 재현율, f1 출력
+        """
         confusion = confusion_matrix(y_test, pred)
         accuracy = accuracy_score(y_test , pred)
         precision = precision_score(y_test , pred)
@@ -130,6 +150,9 @@ class Anomaly_Detection_model():
 
     
     def get_eval_by_threshold(self, y_test , pred_proba_c1, thresholds):
+        """
+        임계값에 따른 evaluation 출력
+        """
         # thresholds list객체내의 값을 차례로 iteration하면서 Evaluation 수행.
         for custom_threshold in thresholds:
             binarizer = Binarizer(threshold=custom_threshold).fit(pred_proba_c1) 
@@ -139,6 +162,9 @@ class Anomaly_Detection_model():
             print('-'*50)
 
     def roc_curve_plot(self, model_list, x_test, y_test):
+        """
+        roc 커브 출력
+        """
         if y_test.ndim == 1:
             y_test = y_test.reshape(-1, 1)
         y_test = np.clip(y_test, 0, 1)
@@ -156,8 +182,8 @@ class Anomaly_Detection_model():
             plt.plot([0,1],[0,1], 'k--', label = 'Random')
             start, end = plt.xlim()
             plt.xticks(np.round(np.arange(start, end, 0.1),2))
-            plt.xlim(0,1)
-            plt.ylim(0,1)
+            plt.xlim(0-0.025,1+0.025)
+            plt.ylim(0-0.025,1+0.025)
             plt.xlabel('FPR(1-Sensitivity)')
             plt.ylabel('TPR(Recall)')
             plt.legend()

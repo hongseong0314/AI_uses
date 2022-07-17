@@ -11,6 +11,7 @@ def seperate_type(df):
     
     return numerical, category
 
+# 데이터 전처리
 def preprocess(mode='train'):
     """
     데이터 전처리 함수
