@@ -50,7 +50,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         return outputs
 
 class TransformerBlock(tf.keras.layers.Layer):
-    def __init__(self, embedding_dim, num_heads, dff, rate=0.1):
+    def __init__(self, embedding_dim, num_heads, dff, rate=0.1, **kwargs):
         super(TransformerBlock, self).__init__()
         self.att = MultiHeadAttention(embedding_dim, num_heads)
         self.ffn = tf.keras.Sequential(
@@ -88,7 +88,7 @@ class TransformerBlock(tf.keras.layers.Layer):
 
 
 class TokenAndPositionEmbedding(tf.keras.layers.Layer):
-    def __init__(self, max_len, vocab_size, embedding_dim):
+    def __init__(self, max_len, vocab_size, embedding_dim, **kwargs):
         super(TokenAndPositionEmbedding, self).__init__()
         self.token_emb = tf.keras.layers.Embedding(vocab_size, embedding_dim)
         self.pos_emb = tf.keras.layers.Embedding(max_len, embedding_dim)

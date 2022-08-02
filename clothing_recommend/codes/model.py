@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 
 from codes.utills import preprocess, word_tokenizer
-from codes.transformer_block import TokenAndPositionEmbedding, TransformerBlock, MultiHeadAttention
+from codes.transformer_block import TokenAndPositionEmbedding, TransformerBlock
 
 class clothing_transformer():
     def __init__(self, max_len, vocab_size):
@@ -21,7 +21,9 @@ class clothing_transformer():
 
     def get_model(self, embedding_dim, num_heads, dff, pretrained = False):
         if pretrained:
-            self.model = tf.keras.models.load_model(pretrained)
+            self.model = tf.keras.models.load_model(pretrained, custom_objects={'TokenAndPositionEmbedding':TokenAndPositionEmbedding,
+                                                                                'TransformerBlock':TransformerBlock,
+                                                                                })
 
         else:
             inputs = tf.keras.layers.Input(shape=(self.max_len,))
@@ -44,15 +46,15 @@ class clothing_transformer():
         create_directory("weight")
 
         filename = 'weight/transfomer-epoch-{}-batch-{}.h5'.format(epoch, batch_size)
-        checkpoint = ModelCheckpoint(filename,             # file명을 지정합니다
-                                    monitor='val_loss',   # val_loss 값이 개선되었을때 호출됩니다
-                                    verbose=1,            # 로그를 출력합니다
-                                    save_best_only=True,  # 가장 best 값만 저장합니다
-                                    mode='auto'           # auto는 알아서 best를 찾습니다. min/max
+        checkpoint = ModelCheckpoint(filename,            
+                                    monitor='val_loss',   
+                                    verbose=1,           
+                                    save_best_only=True,  
+                                    mode='auto'          
                                     )
 
-        earlystopping = EarlyStopping(monitor='val_loss',  # 모니터 기준 설정 (val loss) 
-                                    patience=3,         # 10회 Epoch동안 개선되지 않는다면 종료
+        earlystopping = EarlyStopping(monitor='val_loss',  
+                                    patience=3,         
                                     )
 
         self.model.compile("adam", "sparse_categorical_crossentropy", metrics=["accuracy"])
@@ -63,6 +65,15 @@ class clothing_transformer():
                                 callbacks=[checkpoint, earlystopping])
 
         return history
+    
+    def predict(self, x_test, prob=True):
+        if prob:
+            return self.model.predict(x_test)
+        else:
+            return np.argmax(self.model.predict(x_test), axis=1)
+
+    def load_model(self, path):
+        self.get_model(embedding_dim=None, num_heads=None, dff=None, pretrained=path)        
 
 
 def create_directory(dir):
